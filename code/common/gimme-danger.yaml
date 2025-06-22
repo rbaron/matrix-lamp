@@ -1,0 +1,104 @@
+esphome:
+  name: matrix_lamp
+  friendly_name: Matrix Lamp
+  on_boot:
+    - delay: 500ms
+    - logger.log:
+        format: "Starting PD negotiation"
+        level: WARN
+    - fusb302.start_power_negotiation:
+        id: fusb302_id
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 4MB
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/rbaron/esphome
+      ref: fusb302
+    components: [fusb302]
+
+i2c:
+  - id: i2c_bus_fusb302
+    sda: GPIO7
+    scl: GPIO6
+    scan: False
+    frequency: 100kHz
+  - id: i2c_bus_ina
+    sda: GPIO11
+    scl: GPIO10
+    scan: False
+    frequency: 400kHz
+
+logger:
+  hardware_uart: UART0
+  level: INFO
+
+output:
+  - platform: gpio
+    pin:
+      number: 13
+      mode: output
+    id: yellow_led
+  - platform: gpio
+    pin:
+      number: 14
+      mode: output
+    id: red_led
+  - platform: ledc
+    id: output_ch1
+    pin: GPIO48
+  - platform: ledc
+    id: output_ch2
+    pin: GPIO47
+  - platform: ledc
+    id: output_ch3
+    pin: GPIO21
+  - platform: ledc
+    id: output_ch4
+    pin: GPIO38
+
+sensor:
+  - id: ina219_sensor
+    platform: ina219
+    i2c_id: i2c_bus_ina
+    address: 0x40
+    shunt_resistance: 0.01 ohm
+    current:
+      id: ina219_current
+      name: "Current"
+    power:
+      name: "Power"
+    bus_voltage:
+      id: ina219_load_voltage
+      name: "Load Voltage"
+    shunt_voltage:
+      name: "Shunt Voltage"
+    max_voltage: 28.0V
+    max_current: 5A
+    update_interval: 500ms
+
+fusb302:
+  id: fusb302_id
+  i2c_id: i2c_bus_fusb302
+  interrupt_pin: GPIO5
+  voltage: 5000 mV
+  current: 2000 mA
+  start_power_negotiation_on_boot: false
+  on_pd_negotiation_success:
+    then:
+      - output.turn_on: yellow_led
+      - output.turn_off: red_led
+      - switch.turn_on: load_switch
+      # - output.set_level:
+      #     id: output_ch1
+      #     level: !lambda "return id(output_level);"
+  on_pd_negotiation_failure:
+    then:
+      - output.turn_off: yellow_led
+      - output.turn_on: red_led
+      - switch.turn_off: load_switch
+      - lambda: |-
+          ESP_LOGW("fusb302_trigger", "PD negotiation failure outcome: %d", success);
