@@ -59,7 +59,7 @@ light:
     # name: "FastLED WS2811 Light"
     internal: true
     # Set max brightness.
-    color_correct: [75%, 75%, 75%]
+    color_correct: [65%, 65%, 65%]
     # power_supply: power_supply
     default_transition_length: 10ms
 
