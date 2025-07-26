@@ -24,7 +24,6 @@ binary_sensor:
         - logger.log:
             format: "Button PRESS"
             level: WARN
-        # - output.turn_off: output_ch1
 
 time:
   - platform: sntp
@@ -32,9 +31,6 @@ time:
     timezone: Europe/Zurich
 
 font:
-  # - file: "font/pixelmix.ttf"
-  #   id: digit_font
-  #   size: 6
   - file: "font/MatrixLight6.ttf"
     id: digit_font
     size: 6
@@ -45,10 +41,6 @@ globals:
     restore_value: yes
     initial_value: "90"
 
-# power_supply:
-#   - id: power_supply
-#     pin: GPIO12
-
 light:
   - platform: fastled_clockless
     id: lights
@@ -56,11 +48,9 @@ light:
     pin: GPIO9
     num_leds: 512 # 2 x 32x8 matrix
     rgb_order: GRB
-    # name: "FastLED WS2811 Light"
     internal: true
-    # Set max brightness.
+    # Set max brightness to 65%.
     color_correct: [65%, 65%, 65%]
-    # power_supply: power_supply
     default_transition_length: 10ms
 
 # https://esphome.io/components/display/addressable_light#btf-lighting-8x32-ws2812b-flexible-led-matrix
@@ -78,21 +68,7 @@ display:
       return (x * 8) + iMatrixOffset + (7 - (y % 8));
     update_interval: 500ms
     lambda: |-
-      // Draw a bulls-eye pattern
-      Color red = Color(0xFF0000);
-      Color green = Color(0x00FF00);
-      Color blue = Color(0x0000FF);
       Color amber = Color(0xDF8634);
-      //Color amber = Color(0xCD7F32);
-      // x, y, width, height
-      //it.rectangle(0, 0, 8, 4, red);
-      // it.rectangle(20, 2, 8, 12, green);
-      // it.rectangle(12, 7, 8, 4, blue);
-      // it.rectangle(1, 1, 6, 6, green);
-      // it.rectangle(2, 2, 4, 4, blue);
-      // it.rectangle(3, 3, 2, 2, amber);
-      // it.print(0, 0, id(digit_font), red, "04:20");
-      // it.printf(0, 0, id(digit_font), red, "%.0f", id(angle));
 
       int cols = 32 * (id(angle) / 360.0f);
       // Fill rect from (0, 0) to (cols, 16) with amber.
@@ -111,7 +87,6 @@ number:
   - platform: template
     id: angle_selector
     name: "Angle Selector"
-    # device_class: voltage
     min_value: 0
     max_value: 360
     step: 10
@@ -119,9 +94,6 @@ number:
     optimistic: true
     on_value:
       then:
-        # - lambda: |-
-        #     // id(matrix_lamp).printf(0, 0, id(digit_font), Color(0xFF0000), "%.1f", id(angle_selector).state);
-        #     id(matrix_lamp).print(0, 0, id(digit_font), "HI");
         - lambda: |-
             // Update the angle global variable
             id(angle) = id(angle_selector).state;
@@ -140,22 +112,12 @@ switch:
     on_turn_on:
       then:
         - delay: 1000ms
-        # - logger.log:
-        #     format: "Load switch turned ON"
-        #     level: INFO
         - lambda: |-
             ESP_LOGW("load_switch", "Load switch turned ON");
             id(matrix_lamp).set_enabled(true);
-        #     id(matrix_lamp).clear();
-        # - lambda: |-
-        #     id(angle) = id(angle_selector).state;
-        # - component.update: matrix_lamp
     on_turn_off:
       then:
         - delay: 1000ms
-        # - logger.log:
-        #     format: "Load switch turned OFF"
-        #     level: INFO
         - lambda: |-
             ESP_LOGW("load_switch", "Load switch turned OFF");
             id(matrix_lamp).set_enabled(false);
